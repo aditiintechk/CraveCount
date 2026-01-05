@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#f8fafc"
       },
       "package": "com.cravecount.app",
       "versionCode": 1,
@@ -44,7 +44,7 @@
     "scheme": "cravecount",
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "d312fa7a-3fbc-48b3-917f-a35c6a9c2d12"
       }
     }
   }
