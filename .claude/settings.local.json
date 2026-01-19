@@ -9,7 +9,18 @@
       "Bash(findstr:*)",
       "Bash(dir \"C:\\Users\\aditi\\OneDrive\\Desktop\\saas-experiments\\craveCount\" /b)",
       "Bash(ls:*)",
-      "Bash(copy assetsicon.png assetsadaptive-icon.png)"
+      "Bash(copy assetsicon.png assetsadaptive-icon.png)",
+      "Bash(identify -verbose:*)",
+      "Bash(npx expo prebuild --clean)",
+      "Bash(copy assetsicon.png assetsfavicon.png)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nUpdate app assets with indigo hexagon icon\n\n- Updated icon.png, adaptive-icon.png, and splash.png with indigo hexagon design\n- Changed adaptive icon background color from white to #f8fafc for better visibility\n- Updated favicon.png for web builds\n- Regenerated native Android icon assets via expo prebuild\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(gradlew assembleRelease:*)",
+      "Bash(./gradlew assembleRelease:*)",
+      "Bash(del apptest-data.tsx)",
+      "Bash(adb devices:*)",
+      "Bash(gradlew.bat app:assembleDebug:*)",
+      "Bash(git config:*)"
     ]
   }
 }

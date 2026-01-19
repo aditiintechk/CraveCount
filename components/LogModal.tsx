@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,6 @@ import { X } from 'lucide-react-native';
 
 import { useStore, Category, Emotion } from '../store/useStore';
 
-const categories: Category[] = ['Sugar', 'Junk Food', 'Instagram', 'TikTok', 'YouTube', 'Other'];
-
 const emotions: { name: Emotion; emoji: string }[] = [
   { name: 'Curious', emoji: '🤔' },
   { name: 'Restless', emoji: '😤' },
@@ -27,22 +25,45 @@ const emotions: { name: Emotion; emoji: string }[] = [
 interface LogModalProps {
   visible: boolean;
   onClose: () => void;
+  onLogSuccess?: (points: number) => void;
 }
 
-export default function LogModal({ visible, onClose }: LogModalProps) {
-  const [selectedCategory, setSelectedCategory] = useState<Category>('Sugar');
+export default function LogModal({ visible, onClose, onLogSuccess }: LogModalProps) {
+  const customCravings = useStore((state) => state.customCravings);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedEmotion, setSelectedEmotion] = useState<Emotion | undefined>(undefined);
   const [reflection, setReflection] = useState('');
   const [selectedType, setSelectedType] = useState<'observed' | 'resisted'>('resisted');
 
   const addLog = useStore((state) => state.addLog);
 
+  // Set default category when modal opens or customCravings change
+  useEffect(() => {
+    if (visible && customCravings.length > 0 && !selectedCategory) {
+      setSelectedCategory(customCravings[0]);
+    }
+  }, [visible, customCravings, selectedCategory]);
+
   const handleSubmit = (type: 'observed' | 'resisted') => {
+    if (!selectedCategory) return;
+
     addLog(selectedCategory, type, selectedEmotion, reflection);
+
+    // Calculate points earned
+    const points = type === 'resisted' ? 30 : 10;
+
+    // Trigger animation
+    if (onLogSuccess) {
+      onLogSuccess(points);
+    }
+
+    // Reset form
     setReflection('');
-    setSelectedCategory('Sugar');
+    setSelectedCategory(customCravings[0] || null);
     setSelectedEmotion(undefined);
     setSelectedType('resisted');
+
+    // Close modal
     onClose();
   };
 
@@ -103,7 +124,7 @@ export default function LogModal({ visible, onClose }: LogModalProps) {
                   WHAT ARE YOU CRAVING?
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
-                  {categories.map((category) => (
+                  {customCravings.map((category) => (
                     <TouchableOpacity
                       key={category}
                       onPress={() => setSelectedCategory(category)}

@@ -19,6 +19,7 @@ export interface UserData {
   willpowerPoints: number;
   logs: any[];
   plannedJoys: any[];
+  customCravings?: any[];
   lastSyncedAt?: number;
 }
 
@@ -67,6 +68,7 @@ export async function saveUserData(data: UserData): Promise<boolean> {
         date: safeToISOString(joy.date),
         notificationId: joy.notificationId || null,
       })),
+      customCravings: data.customCravings || [],
       lastSyncedAt: Date.now(),
     };
 

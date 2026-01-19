@@ -1,19 +1,25 @@
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Settings as SettingsIcon, Bell, Lock, User, LogOut, ChevronRight, Calendar, Cloud, CloudOff, RotateCcw } from 'lucide-react-native';
+import { Settings as SettingsIcon, Bell, Lock, User, LogOut, ChevronRight, Calendar, Cloud, CloudOff, RotateCcw, Target, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useState } from 'react';
-import { useStore } from '../../store/useStore';
+import { useStore, Category } from '../../store/useStore';
+import { CravingSelector } from '../../components/CravingSelector';
 
 export default function Settings() {
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [privacyMode, setPrivacyMode] = useState(false);
+  const [cravingsModalVisible, setCravingsModalVisible] = useState(false);
+  const [tempSelectedCravings, setTempSelectedCravings] = useState<Category[]>([]);
+
   const willpowerPoints = useStore((state) => state.willpowerPoints);
   const isSyncing = useStore((state) => state.isSyncing);
   const lastSyncedAt = useStore((state) => state.lastSyncedAt);
+  const customCravings = useStore((state) => state.customCravings);
+  const setCustomCravings = useStore((state) => state.setCustomCravings);
 
   const formatSyncTime = () => {
     if (!lastSyncedAt) return 'Not synced yet';
@@ -46,6 +52,19 @@ export default function Settings() {
         },
       ]
     );
+  };
+
+  const handleOpenCravingsModal = () => {
+    setTempSelectedCravings(customCravings);
+    setCravingsModalVisible(true);
+  };
+
+  const handleSaveCravings = async () => {
+    if (tempSelectedCravings.length === 3) {
+      await setCustomCravings(tempSelectedCravings);
+      setCravingsModalVisible(false);
+      Alert.alert('Success', 'Your cravings have been updated!');
+    }
   };
 
   return (
@@ -153,24 +172,45 @@ export default function Settings() {
             </View>
           </View>
 
-          {/* Planned Joys */}
+          {/* Tracking */}
           <View >
             <Text className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-              Rewards
+              Tracking
             </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push('/planned-joys')}
-              className="bg-white rounded-3xl px-5 py-4 border border-slate-100 flex-row items-center justify-between"
-            >
-              <View className="flex-row items-center flex-1">
-                <Calendar size={20} color="#6366f1" />
-                <Text className="text-slate-900 text-base font-medium ml-3">
-                  Planned Joys
-                </Text>
-              </View>
-              <ChevronRight size={20} color="#94a3b8" />
-            </TouchableOpacity>
+            <View className="bg-white rounded-3xl overflow-hidden border border-slate-100">
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleOpenCravingsModal}
+                className="px-5 py-4 border-b border-slate-100 flex-row items-center justify-between"
+              >
+                <View className="flex-row items-center flex-1">
+                  <Target size={20} color="#6366f1" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-slate-900 text-base font-medium">
+                      My Cravings
+                    </Text>
+                    <Text className="text-slate-500 text-xs mt-0.5">
+                      {customCravings.length > 0 ? customCravings.join(', ') : 'Not set'}
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#94a3b8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push('/planned-joys')}
+                className="px-5 py-4 flex-row items-center justify-between"
+              >
+                <View className="flex-row items-center flex-1">
+                  <Calendar size={20} color="#6366f1" />
+                  <Text className="text-slate-900 text-base font-medium ml-3">
+                    Planned Joys
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
           </View>
 
 
@@ -213,6 +253,59 @@ export default function Settings() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Cravings Modal */}
+      <Modal
+        visible={cravingsModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCravingsModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/40 justify-end">
+          <View
+            className="bg-white rounded-t-4xl p-6"
+            style={{
+              maxHeight: '85%',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -10 },
+              shadowOpacity: 0.1,
+              shadowRadius: 20,
+              elevation: 20,
+            }}
+          >
+            <View className="flex-row items-center justify-between mb-6">
+              <Text className="text-2xl font-bold text-slate-900">
+                Update Your Cravings
+              </Text>
+              <TouchableOpacity
+                onPress={() => setCravingsModalVisible(false)}
+                className="w-10 h-10 items-center justify-center rounded-full bg-slate-100"
+              >
+                <X size={20} color="#0f172a" />
+              </TouchableOpacity>
+            </View>
+
+            <CravingSelector
+              selectedCravings={tempSelectedCravings}
+              onSelect={setTempSelectedCravings}
+              maxSelections={3}
+            />
+
+            <TouchableOpacity
+              onPress={handleSaveCravings}
+              disabled={tempSelectedCravings.length !== 3}
+              className={`mt-6 rounded-xl py-4 items-center ${
+                tempSelectedCravings.length === 3 ? 'bg-indigo-600' : 'bg-slate-300'
+              }`}
+              activeOpacity={0.7}
+            >
+              <Text className="text-white font-bold text-base">
+                Save Changes
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

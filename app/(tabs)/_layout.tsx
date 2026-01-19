@@ -4,6 +4,7 @@ import { Home, Lightbulb, History, Settings, Plus } from 'lucide-react-native'
 import { useState } from 'react'
 
 import LogModal from '../../components/LogModal'
+import { PointsAnimation } from '../../components/PointsAnimation'
 
 const TabIcon = ({ Icon, focused }: { Icon: any; focused: boolean }) => (
 	<Icon
@@ -15,6 +16,13 @@ const TabIcon = ({ Icon, focused }: { Icon: any; focused: boolean }) => (
 
 export default function TabLayout() {
 	const [modalVisible, setModalVisible] = useState(false)
+	const [showPoints, setShowPoints] = useState(false)
+	const [earnedPoints, setEarnedPoints] = useState(0)
+
+	const handleLogSuccess = (points: number) => {
+		setEarnedPoints(points)
+		setShowPoints(true)
+	}
 
 	return (
 		<>
@@ -106,6 +114,13 @@ export default function TabLayout() {
 			<LogModal
 				visible={modalVisible}
 				onClose={() => setModalVisible(false)}
+				onLogSuccess={handleLogSuccess}
+			/>
+
+			<PointsAnimation
+				points={earnedPoints}
+				visible={showPoints}
+				onComplete={() => setShowPoints(false)}
 			/>
 		</>
 	)

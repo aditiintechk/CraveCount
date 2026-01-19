@@ -1,6 +1,7 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -12,12 +13,19 @@ const firebaseConfig = {
   appId: "1:977163459752:web:8922551eb815cb97b0f69d"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase (only once)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Auth
-// Firebase JS SDK automatically persists auth state in React Native
-const auth = getAuth(app);
+// Initialize Auth with React Native persistence
+let auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+} catch (error) {
+  // Auth already initialized (happens during hot reload in dev)
+  auth = getAuth(app);
+}
 
 // Initialize Firestore
 const db = getFirestore(app);

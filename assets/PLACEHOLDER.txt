@@ -1,9 +1,0 @@
-Place your app assets here:
-
-Required files:
-- icon.png (1024x1024)
-- splash.png (1242x2436)
-- adaptive-icon.png (1024x1024)
-- favicon.png (48x48)
-
-See ASSETS_README.md in the root directory for details on how to generate these.

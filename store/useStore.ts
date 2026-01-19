@@ -5,7 +5,7 @@ import { schedulePlannedJoyNotification, cancelNotification, updatePlannedJoyNot
 import { saveUserData, loadUserData } from '../services/syncService';
 import { initializeAuth } from '../services/authService';
 
-export type Category = 'Sugar' | 'Junk Food' | 'Instagram' | 'TikTok' | 'YouTube' | 'Other';
+export type Category = 'Sugar' | 'Junk Food' | 'Instagram' | 'TikTok' | 'YouTube' | 'Alcohol' | 'Cigarettes' | 'Shopping' | 'Gaming' | 'Netflix' | 'Twitter' | 'Reddit' | 'Porn' | 'Coffee' | 'Other';
 
 export type LogType = 'observed' | 'resisted';
 
@@ -33,6 +33,7 @@ interface StoreState {
   willpowerPoints: number;
   logs: Log[];
   plannedJoys: PlannedJoy[];
+  customCravings: Category[];
   isSyncing: boolean;
   lastSyncedAt: number | null;
   addLog: (category: Category, type: LogType, emotion?: Emotion, reflection?: string) => void;
@@ -40,6 +41,7 @@ interface StoreState {
   addPlannedJoy: (title: string, description: string | undefined, date: Date) => Promise<void>;
   deletePlannedJoy: (id: string) => Promise<void>;
   updatePlannedJoy: (id: string, title: string, description: string | undefined, date: Date) => Promise<void>;
+  setCustomCravings: (cravings: Category[]) => Promise<void>;
   loadData: () => Promise<void>;
   syncToCloud: () => Promise<void>;
   getAwarenessCount: () => number;
@@ -54,6 +56,7 @@ export const useStore = create<StoreState>((set, get) => ({
   willpowerPoints: 0,
   logs: [],
   plannedJoys: [],
+  customCravings: [], // Will be set during onboarding
   isSyncing: false,
   lastSyncedAt: null,
 
@@ -80,6 +83,7 @@ export const useStore = create<StoreState>((set, get) => ({
       willpowerPoints: currentState.willpowerPoints,
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -101,6 +105,7 @@ export const useStore = create<StoreState>((set, get) => ({
       willpowerPoints: currentState.willpowerPoints,
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -131,6 +136,7 @@ export const useStore = create<StoreState>((set, get) => ({
       willpowerPoints: currentState.willpowerPoints,
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -160,6 +166,7 @@ export const useStore = create<StoreState>((set, get) => ({
       willpowerPoints: currentState.willpowerPoints,
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -184,6 +191,28 @@ export const useStore = create<StoreState>((set, get) => ({
       willpowerPoints: currentState.willpowerPoints,
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
+    };
+
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    await get().syncToCloud();
+  },
+
+  setCustomCravings: async (cravings: Category[]) => {
+    if (cravings.length > 3) {
+      console.warn('Cannot set more than 3 custom cravings');
+      return;
+    }
+
+    set({ customCravings: cravings });
+
+    // Persist to AsyncStorage and sync to cloud
+    const currentState = get();
+    const dataToSave = {
+      willpowerPoints: currentState.willpowerPoints,
+      logs: currentState.logs,
+      plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -212,6 +241,7 @@ export const useStore = create<StoreState>((set, get) => ({
             ...joy,
             date: new Date(joy.date),
           })).sort((a: PlannedJoy, b: PlannedJoy) => a.date.getTime() - b.date.getTime()) || [],
+          customCravings: cloudData.customCravings || [],
           lastSyncedAt: cloudData.lastSyncedAt || null,
         });
 
@@ -233,6 +263,7 @@ export const useStore = create<StoreState>((set, get) => ({
               ...joy,
               date: new Date(joy.date),
             })).sort((a: PlannedJoy, b: PlannedJoy) => a.date.getTime() - b.date.getTime()) || [],
+            customCravings: parsed.customCravings || [],
           });
 
           // Upload local data to cloud
@@ -253,6 +284,7 @@ export const useStore = create<StoreState>((set, get) => ({
         willpowerPoints: currentState.willpowerPoints,
         logs: currentState.logs,
         plannedJoys: currentState.plannedJoys,
+        customCravings: currentState.customCravings,
       });
 
       if (success) {

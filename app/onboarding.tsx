@@ -2,37 +2,59 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { Zap, Brain, CheckCircle, Youtube, Instagram, Cookie, Award, Lock } from 'lucide-react-native';
+import { Zap, Brain, CheckCircle, Youtube, Instagram, Cookie, Lightbulb, Target } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useStore, Category } from '../store/useStore';
+import { PointsAnimation } from '../components/PointsAnimation';
+import { CravingSelector } from '../components/CravingSelector';
 
 const ONBOARDING_KEY = '@crave_count_onboarding_complete';
 
-// Preview badges to show in onboarding
-const PREVIEW_BADGES = [
+// Helper to render text with bold markdown (same as insights screen)
+const renderTextWithBold = (text: string, className: string) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return (
+    <Text className={className}>
+      {parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const boldText = part.slice(2, -2);
+          return (
+            <Text key={index} className="font-bold">
+              {boldText}
+            </Text>
+          );
+        }
+        return <Text key={index}>{part}</Text>;
+      })}
+    </Text>
+  );
+};
+
+// Preview insights to show in onboarding
+const PREVIEW_INSIGHTS = [
   {
-    icon: '🌱',
-    title: 'First Step',
-    description: 'Log your first moment of awareness',
-    color: 'emerald',
+    title: 'Emotional Trigger • Sugar',
+    description: '75% of your **Sugar** cravings happen when you\'re **Stressed**.',
+    actionable: 'Deep breathing for 2 minutes, take a walk, or text a friend.',
+    type: 'Emotional Pattern',
   },
   {
-    icon: '🛡️',
-    title: 'First Resistance',
-    description: 'Choose differently for the first time',
-    color: 'indigo',
+    title: 'Time Pattern • Willpower',
+    description: 'You resist **80%** in **morning** but only **20%** at **night**.',
+    actionable: 'Schedule important tasks in the morning when willpower is strongest.',
+    type: 'Time-Based',
   },
   {
-    icon: '💪',
-    title: 'Committed',
-    description: 'Track 25 moments of awareness',
-    color: 'amber',
+    title: 'Substitution • Instagram → TikTok',
+    description: '60% of the time you resist **Instagram**, you reach for **TikTok** within 2 hours.',
+    actionable: 'Address the real need: connection, stimulation, or rest.',
+    type: 'Habit Chain',
   },
   {
-    icon: '🎯',
-    title: 'Pattern Master',
-    description: 'Reach 50 total moments logged',
-    color: 'rose',
+    title: 'Hidden Trigger • YouTube',
+    description: 'You wrote **"tired"** in 40% of reflections, always followed by **YouTube** cravings.',
+    actionable: 'Sleep more or take a real nap instead of reaching for quick fixes.',
+    type: 'Root Cause',
   },
 ];
 
@@ -44,10 +66,14 @@ const QUICK_CATEGORIES: { name: Category; icon: any; color: string }[] = [
 
 export default function Onboarding() {
   const [currentScreen, setCurrentScreen] = useState(0);
+  const [selectedCravings, setSelectedCravings] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedType, setSelectedType] = useState<'observed' | 'resisted' | null>(null);
+  const [showPoints, setShowPoints] = useState(false);
+  const [earnedPoints, setEarnedPoints] = useState(0);
   const router = useRouter();
   const addLog = useStore((state) => state.addLog);
+  const setCustomCravings = useStore((state) => state.setCustomCravings);
 
   useEffect(() => {
     // Check if onboarding is already complete
@@ -68,15 +94,26 @@ export default function Onboarding() {
   const handleLogCraving = () => {
     if (selectedCategory && selectedType) {
       addLog(selectedCategory, selectedType);
-      setCurrentScreen(2); // Go to success screen
+
+      // Show points animation
+      const points = selectedType === 'resisted' ? 30 : 10;
+      setEarnedPoints(points);
+      setShowPoints(true);
+
+      // Save custom cravings and go to success screen after a short delay
+      setCustomCravings(selectedCravings);
+
+      setTimeout(() => {
+        setCurrentScreen(3);
+      }, 1000);
     }
   };
 
   const handleSuccessContinue = () => {
-    setCurrentScreen(3); // Go to badge preview screen
+    setCurrentScreen(4); // Go to insights preview screen
   };
 
-  const isLastScreen = currentScreen === 3;
+  const isLastScreen = currentScreen === 4;
 
   const renderScreen = () => {
     if (currentScreen === 0) {
@@ -97,7 +134,30 @@ export default function Onboarding() {
     }
 
     if (currentScreen === 1) {
-      // Screen 2: Try It - Interactive
+      // Screen 2: Pick Cravings
+      return (
+        <ScrollView className="flex-1 px-6 pt-12" showsVerticalScrollIndicator={false}>
+          <View className="items-center mb-6">
+            <Target size={48} color="#6366f1" />
+          </View>
+          <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+            Choose Your Focus
+          </Text>
+          <Text className="text-sm text-slate-600 text-center mb-8">
+            Select 3 cravings you want to track and understand
+          </Text>
+
+          <CravingSelector
+            selectedCravings={selectedCravings}
+            onSelect={setSelectedCravings}
+            maxSelections={3}
+          />
+        </ScrollView>
+      );
+    }
+
+    if (currentScreen === 2) {
+      // Screen 3: Try It - Interactive
       return (
         <ScrollView className="flex-1 px-6 pt-12" showsVerticalScrollIndicator={false}>
           <View className="items-center mb-6">
@@ -110,16 +170,17 @@ export default function Onboarding() {
             Log a craving right now to see how it works
           </Text>
 
-          {/* Category Selection */}
+          {/* Category Selection - Use their custom cravings */}
           <Text className="text-sm font-semibold text-slate-700 mb-3">What did you crave?</Text>
           <View className="flex-row gap-3 mb-6">
-            {QUICK_CATEGORIES.map((cat) => {
+            {selectedCravings.slice(0, 3).map((craving) => {
+              const cat = QUICK_CATEGORIES.find(c => c.name === craving) || { name: craving, icon: Cookie, color: '#6366f1' };
               const Icon = cat.icon;
-              const isSelected = selectedCategory === cat.name;
+              const isSelected = selectedCategory === craving;
               return (
                 <TouchableOpacity
-                  key={cat.name}
-                  onPress={() => setSelectedCategory(cat.name)}
+                  key={craving}
+                  onPress={() => setSelectedCategory(craving)}
                   className={`flex-1 rounded-2xl p-4 items-center border-2 ${
                     isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'
                   }`}
@@ -127,7 +188,7 @@ export default function Onboarding() {
                 >
                   <Icon size={28} color={cat.color} />
                   <Text className={`text-xs font-medium mt-2 ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>
-                    {cat.name}
+                    {craving}
                   </Text>
                 </TouchableOpacity>
               );
@@ -188,8 +249,8 @@ export default function Onboarding() {
       );
     }
 
-    if (currentScreen === 2) {
-      // Screen 3: Success
+    if (currentScreen === 3) {
+      // Screen 4: Success
       return (
         <View className="flex-1 justify-center px-6">
           <View className="items-center mb-6">
@@ -208,52 +269,67 @@ export default function Onboarding() {
       );
     }
 
-    // Screen 4: Badge Preview
+    // Screen 5: Insights Preview
     return (
       <ScrollView className="flex-1 px-6 pt-12" showsVerticalScrollIndicator={false}>
         <View className="items-center mb-6">
-          <Award size={48} color="#6366f1" />
+          <Lightbulb size={48} color="#6366f1" />
         </View>
         <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
-          Unlock Achievements
+          Discover Your Patterns
         </Text>
         <Text className="text-sm text-slate-600 text-center mb-8">
-          Track your progress and earn badges as you grow
+          Track 15-25 moments to unlock powerful insights like these
         </Text>
 
-        <View className="gap-3 mb-6">
-          {PREVIEW_BADGES.map((badge, index) => (
+        <View className="gap-4 mb-6">
+          {PREVIEW_INSIGHTS.map((insight, index) => (
             <View
               key={index}
-              className="bg-white rounded-3xl p-4 border-2 border-slate-200"
+              className="bg-white rounded-3xl p-5 border border-slate-100"
               style={{
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.05,
-                shadowRadius: 8,
+                shadowRadius: 10,
                 elevation: 2,
               }}
             >
-              <View className="flex-row items-center">
-                <View className="w-12 h-12 rounded-full bg-slate-100 items-center justify-center">
-                  <Text className="text-2xl">{badge.icon}</Text>
-                </View>
-                <View className="flex-1 ml-4">
-                  <Text className="text-base font-bold text-slate-900 mb-1">
-                    {badge.title}
-                  </Text>
-                  <Text className="text-xs text-slate-600">
-                    {badge.description}
+              {/* Type badge */}
+              <View className="flex-row items-center mb-3">
+                <View className="bg-indigo-50 rounded-full px-3 py-1">
+                  <Text className="text-indigo-700 text-xs font-bold">
+                    {insight.type}
                   </Text>
                 </View>
+              </View>
+
+              {/* Title */}
+              <Text className="text-slate-900 text-base font-bold mb-3">
+                {insight.title}
+              </Text>
+
+              {/* Description with bold text */}
+              <View className="mb-3">
+                {renderTextWithBold(insight.description, "text-slate-600 text-sm leading-6")}
+              </View>
+
+              {/* Actionable tip */}
+              <View className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+                <Text className="text-indigo-700 text-xs font-bold uppercase tracking-wider mb-1">
+                  💡 What to do
+                </Text>
+                <Text className="text-slate-700 text-xs leading-5">
+                  {insight.actionable}
+                </Text>
               </View>
             </View>
           ))}
         </View>
 
-        <View className="bg-indigo-50 rounded-2xl p-4 mb-6 border border-indigo-200">
-          <Text className="text-sm text-indigo-900 text-center font-medium">
-            You've already earned your first badge! 🌱
+        <View className="bg-amber-50 rounded-2xl p-4 mb-6 border border-amber-200">
+          <Text className="text-sm text-amber-900 text-center font-medium leading-5">
+            Keep tracking to unlock real insights about YOUR patterns—not generic advice.
           </Text>
         </View>
       </ScrollView>
@@ -270,7 +346,7 @@ export default function Onboarding() {
       <View className="px-6 pb-8">
         {/* Pagination Dots */}
         <View className="flex-row justify-center mb-6 gap-2">
-          {[0, 1, 2, 3].map((index) => (
+          {[0, 1, 2, 3, 4].map((index) => (
             <View
               key={index}
               className={`h-1.5 rounded-full ${
@@ -291,7 +367,20 @@ export default function Onboarding() {
           </TouchableOpacity>
         )}
 
-        {currentScreen === 2 && (
+        {currentScreen === 1 && (
+          <TouchableOpacity
+            onPress={() => setCurrentScreen(2)}
+            disabled={selectedCravings.length !== 3}
+            className={`rounded-xl py-3 items-center ${
+              selectedCravings.length === 3 ? 'bg-indigo-600' : 'bg-slate-300'
+            }`}
+            activeOpacity={0.7}
+          >
+            <Text className="text-white font-bold text-sm">Continue</Text>
+          </TouchableOpacity>
+        )}
+
+        {currentScreen === 3 && (
           <TouchableOpacity
             onPress={handleSuccessContinue}
             className="bg-indigo-600 rounded-xl py-3 items-center"
@@ -301,7 +390,7 @@ export default function Onboarding() {
           </TouchableOpacity>
         )}
 
-        {currentScreen === 3 && (
+        {currentScreen === 4 && (
           <TouchableOpacity
             onPress={completeOnboarding}
             className="bg-indigo-600 rounded-xl py-3 items-center"
@@ -312,7 +401,7 @@ export default function Onboarding() {
         )}
 
         {/* Skip Button */}
-        {currentScreen !== 3 && (
+        {currentScreen !== 4 && (
           <TouchableOpacity
             onPress={completeOnboarding}
             className="mt-3 py-2"
@@ -322,6 +411,13 @@ export default function Onboarding() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Points Animation */}
+      <PointsAnimation
+        points={earnedPoints}
+        visible={showPoints}
+        onComplete={() => setShowPoints(false)}
+      />
     </View>
   );
 }
