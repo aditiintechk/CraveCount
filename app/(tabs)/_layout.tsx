@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router'
 import { View, TouchableOpacity, Platform } from 'react-native'
 import { Home, Lightbulb, History, Settings, Plus } from 'lucide-react-native'
 import { useState } from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import LogModal from '../../components/LogModal'
 import { PointsAnimation } from '../../components/PointsAnimation'
@@ -18,6 +19,7 @@ export default function TabLayout() {
 	const [modalVisible, setModalVisible] = useState(false)
 	const [showPoints, setShowPoints] = useState(false)
 	const [earnedPoints, setEarnedPoints] = useState(0)
+	const insets = useSafeAreaInsets()
 
 	const handleLogSuccess = (points: number) => {
 		setEarnedPoints(points)
@@ -31,7 +33,7 @@ export default function TabLayout() {
 					headerShown: false,
 					tabBarStyle: {
 						position: 'absolute',
-						bottom: 30,
+						bottom: insets.bottom + 10,
 						left: 40,
 						right: 40,
 						height: 70,

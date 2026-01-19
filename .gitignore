@@ -33,3 +33,7 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Claude Code temporary files
+tmpclaude-*
+*.tmp

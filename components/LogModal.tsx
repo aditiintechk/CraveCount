@@ -75,7 +75,8 @@ export default function LogModal({ visible, onClose, onLogSuccess }: LogModalPro
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         className="flex-1"
       >
         <View className="flex-1 justify-end bg-black/40">
@@ -96,8 +97,9 @@ export default function LogModal({ visible, onClose, onLogSuccess }: LogModalPro
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
-              bounces={false}
               keyboardShouldPersistTaps="handled"
+              scrollEnabled={true}
+              nestedScrollEnabled={true}
             >
               {/* Header */}
               <View className="px-6 pt-6 pb-2">
@@ -196,7 +198,7 @@ export default function LogModal({ visible, onClose, onLogSuccess }: LogModalPro
                   className="bg-slate-50 rounded-3xl p-5 text-slate-900 text-base border border-slate-200"
                   style={{
                     textAlignVertical: 'top',
-                    minHeight: 120,
+                    height: 120,
                     fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
                   }}
                 />
@@ -210,7 +212,7 @@ export default function LogModal({ visible, onClose, onLogSuccess }: LogModalPro
                   className="flex-1 bg-amber-50 rounded-3xl p-5 border-2 border-amber-100"
                 >
                   <Text className="text-amber-700 font-bold text-center text-base mb-1">
-                    Just Noticed
+                    I Observed
                   </Text>
                   <Text className="text-amber-600 text-xs text-center font-semibold">
                     +10 PTS
@@ -230,7 +232,7 @@ export default function LogModal({ visible, onClose, onLogSuccess }: LogModalPro
                   }}
                 >
                   <Text className="text-white font-bold text-center text-base mb-1">
-                    Chose Differently
+                    I Resisted
                   </Text>
                   <Text className="text-emerald-400 text-xs text-center font-semibold">
                     +30 PTS

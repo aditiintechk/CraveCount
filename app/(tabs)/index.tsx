@@ -75,14 +75,14 @@ export default function Dashboard() {
         {/* Stats Cards */}
         <View className="flex-row px-6 mb-8 gap-4">
           <View
-            
+
             className="flex-1"
           >
             <View className="bg-amber-50 rounded-3xl p-5 border border-amber-100">
               <View className="flex-row items-center mb-3">
                 <Brain size={18} color="#f59e0b" />
                 <Text className="text-amber-600 text-xs ml-2 font-semibold uppercase tracking-wide">
-                  Awareness
+                  Observed
                 </Text>
               </View>
               <Text className="text-slate-900 text-4xl font-bold">

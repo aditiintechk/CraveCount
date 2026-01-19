@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Settings as SettingsIcon, Bell, Lock, User, LogOut, ChevronRight, Calendar, Cloud, CloudOff, RotateCcw, Target, X } from 'lucide-react-native';
+import { Settings as SettingsIcon, Bell, User, LogOut, ChevronRight, Calendar, Cloud, CloudOff, Target, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -11,7 +11,6 @@ import { CravingSelector } from '../../components/CravingSelector';
 export default function Settings() {
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [privacyMode, setPrivacyMode] = useState(false);
   const [cravingsModalVisible, setCravingsModalVisible] = useState(false);
   const [tempSelectedCravings, setTempSelectedCravings] = useState<Category[]>([]);
 
@@ -36,23 +35,6 @@ export default function Settings() {
     return 'Synced';
   };
 
-  const handleResetOnboarding = async () => {
-    Alert.alert(
-      'Reset Onboarding',
-      'This will show the onboarding screens again. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            await AsyncStorage.removeItem('@crave_count_onboarding_complete');
-            router.replace('/onboarding');
-          },
-        },
-      ]
-    );
-  };
 
   const handleOpenCravingsModal = () => {
     setTempSelectedCravings(customCravings);
@@ -140,7 +122,7 @@ export default function Settings() {
               Preferences
             </Text>
             <View className="bg-white rounded-3xl overflow-hidden border border-slate-100">
-              <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100">
+              <View className="flex-row items-center justify-between px-5 py-4">
                 <View className="flex-row items-center flex-1">
                   <Bell size={20} color="#0f172a" />
                   <Text className="text-slate-900 text-base font-medium ml-3">
@@ -150,21 +132,6 @@ export default function Settings() {
                 <Switch
                   value={notificationsEnabled}
                   onValueChange={setNotificationsEnabled}
-                  trackColor={{ false: '#e2e8f0', true: '#10b981' }}
-                  thumbColor="#fff"
-                />
-              </View>
-
-              <View className="flex-row items-center justify-between px-5 py-4">
-                <View className="flex-row items-center flex-1">
-                  <Lock size={20} color="#0f172a" />
-                  <Text className="text-slate-900 text-base font-medium ml-3">
-                    Privacy Mode
-                  </Text>
-                </View>
-                <Switch
-                  value={privacyMode}
-                  onValueChange={setPrivacyMode}
                   trackColor={{ false: '#e2e8f0', true: '#10b981' }}
                   thumbColor="#fff"
                 />
@@ -211,33 +178,6 @@ export default function Settings() {
                 <ChevronRight size={20} color="#94a3b8" />
               </TouchableOpacity>
             </View>
-          </View>
-
-
-          {/* Developer Options */}
-          <View className="mx-6 mb-6">
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-3 px-1">
-              Developer
-            </Text>
-            <TouchableOpacity
-              onPress={handleResetOnboarding}
-              activeOpacity={0.7}
-              className="bg-white rounded-2xl px-5 py-4 border border-slate-100"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 3,
-                elevation: 1,
-              }}
-            >
-              <View className="flex-row items-center">
-                <RotateCcw size={20} color="#64748b" />
-                <Text className="text-slate-900 text-base font-medium ml-3">
-                  Reset Onboarding
-                </Text>
-              </View>
-            </TouchableOpacity>
           </View>
 
           {/* App Info */}

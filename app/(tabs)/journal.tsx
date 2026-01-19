@@ -6,11 +6,12 @@ import { BookOpen } from 'lucide-react-native';
 import LogCard from '../../components/LogCard';
 import { useState } from 'react';
 
-const categories: (Category | 'All')[] = ['All', 'Sugar', 'Junk Food', 'Instagram', 'TikTok', 'YouTube', 'Other'];
-
 export default function Journal() {
   const logs = useStore((state) => state.logs);
+  const customCravings = useStore((state) => state.customCravings);
   const [selectedFilter, setSelectedFilter] = useState<Category | 'All'>('All');
+
+  const categories: (Category | 'All')[] = ['All', ...customCravings];
 
   const filteredLogs = selectedFilter === 'All'
     ? logs
