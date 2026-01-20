@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router'
 import { View, TouchableOpacity, Platform } from 'react-native'
-import { Home, Lightbulb, History, Settings, Plus } from 'lucide-react-native'
+import { Home, TrendingUp, History, Settings, Plus } from 'lucide-react-native'
 import { useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -68,10 +68,10 @@ export default function TabLayout() {
 					}}
 				/>
 				<Tabs.Screen
-					name='insights'
+					name='journal'
 					options={{
 						tabBarIcon: ({ focused }) => (
-							<TabIcon Icon={Lightbulb} focused={focused} />
+							<TabIcon Icon={History} focused={focused} />
 						),
 					}}
 				/>
@@ -96,10 +96,10 @@ export default function TabLayout() {
 					}}
 				/>
 				<Tabs.Screen
-					name='journal'
+					name='insights'
 					options={{
 						tabBarIcon: ({ focused }) => (
-							<TabIcon Icon={History} focused={focused} />
+							<TabIcon Icon={TrendingUp} focused={focused} />
 						),
 					}}
 				/>

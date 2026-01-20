@@ -9,7 +9,8 @@ export type Category = 'Sugar' | 'Junk Food' | 'Instagram' | 'TikTok' | 'YouTube
 
 export type LogType = 'observed' | 'resisted';
 
-export type Emotion = 'Curious' | 'Restless' | 'Stressed' | 'Bored' | 'Excited';
+// Emotion is now a string to allow custom emotions with emojis
+export type Emotion = string;
 
 export interface Log {
   id: string;
@@ -29,11 +30,20 @@ export interface PlannedJoy {
   notificationId?: string;
 }
 
+export interface TreeLevel {
+  level: number;
+  name: string;
+  emoji: string;
+  min: number;
+  max: number | null;
+}
+
 interface StoreState {
   willpowerPoints: number;
   logs: Log[];
   plannedJoys: PlannedJoy[];
   customCravings: Category[];
+  customEmotions: string[]; // Array of custom emotions with emojis like ['Happy 😊', 'Stressed 😰']
   isSyncing: boolean;
   lastSyncedAt: number | null;
   addLog: (category: Category, type: LogType, emotion?: Emotion, reflection?: string) => void;
@@ -42,12 +52,17 @@ interface StoreState {
   deletePlannedJoy: (id: string) => Promise<void>;
   updatePlannedJoy: (id: string, title: string, description: string | undefined, date: Date) => Promise<void>;
   setCustomCravings: (cravings: Category[]) => Promise<void>;
+  setCustomEmotions: (emotions: string[]) => Promise<void>;
   loadData: () => Promise<void>;
   syncToCloud: () => Promise<void>;
   getAwarenessCount: () => number;
   getResistedCount: () => number;
   getBadges: () => Badge[];
   getInsights: () => Insight[];
+  getTreeLevel: () => TreeLevel;
+  getCurrentStreak: () => number;
+  getLongestStreak: () => number;
+  getResistanceRate: () => number;
 }
 
 const STORAGE_KEY = '@crave_count_data';
@@ -57,6 +72,7 @@ export const useStore = create<StoreState>((set, get) => ({
   logs: [],
   plannedJoys: [],
   customCravings: [], // Will be set during onboarding
+  customEmotions: [], // Will be set by user in settings
   isSyncing: false,
   lastSyncedAt: null,
 
@@ -84,6 +100,7 @@ export const useStore = create<StoreState>((set, get) => ({
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
       customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -106,6 +123,7 @@ export const useStore = create<StoreState>((set, get) => ({
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
       customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -137,6 +155,7 @@ export const useStore = create<StoreState>((set, get) => ({
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
       customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -167,6 +186,7 @@ export const useStore = create<StoreState>((set, get) => ({
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
       customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -192,6 +212,7 @@ export const useStore = create<StoreState>((set, get) => ({
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
       customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -199,8 +220,8 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   setCustomCravings: async (cravings: Category[]) => {
-    if (cravings.length > 3) {
-      console.warn('Cannot set more than 3 custom cravings');
+    if (cravings.length > 10) {
+      console.warn('Cannot set more than 10 custom cravings');
       return;
     }
 
@@ -213,6 +234,29 @@ export const useStore = create<StoreState>((set, get) => ({
       logs: currentState.logs,
       plannedJoys: currentState.plannedJoys,
       customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
+    };
+
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    await get().syncToCloud();
+  },
+
+  setCustomEmotions: async (emotions: string[]) => {
+    if (emotions.length > 10) {
+      console.warn('Cannot set more than 10 custom emotions');
+      return;
+    }
+
+    set({ customEmotions: emotions });
+
+    // Persist to AsyncStorage and sync to cloud
+    const currentState = get();
+    const dataToSave = {
+      willpowerPoints: currentState.willpowerPoints,
+      logs: currentState.logs,
+      plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -242,6 +286,7 @@ export const useStore = create<StoreState>((set, get) => ({
             date: new Date(joy.date),
           })).sort((a: PlannedJoy, b: PlannedJoy) => a.date.getTime() - b.date.getTime()) || [],
           customCravings: cloudData.customCravings || [],
+          customEmotions: cloudData.customEmotions || [],
           lastSyncedAt: cloudData.lastSyncedAt || null,
         });
 
@@ -264,6 +309,7 @@ export const useStore = create<StoreState>((set, get) => ({
               date: new Date(joy.date),
             })).sort((a: PlannedJoy, b: PlannedJoy) => a.date.getTime() - b.date.getTime()) || [],
             customCravings: parsed.customCravings || [],
+            customEmotions: parsed.customEmotions || [],
           });
 
           // Upload local data to cloud
@@ -285,6 +331,7 @@ export const useStore = create<StoreState>((set, get) => ({
         logs: currentState.logs,
         plannedJoys: currentState.plannedJoys,
         customCravings: currentState.customCravings,
+        customEmotions: currentState.customEmotions,
       });
 
       if (success) {
@@ -312,5 +359,90 @@ export const useStore = create<StoreState>((set, get) => ({
 
   getInsights: () => {
     return generateInsights(get().logs);
+  },
+
+  getTreeLevel: () => {
+    const points = get().willpowerPoints;
+    if (points < 100) return { level: 1, name: 'Aware', emoji: '🌱', min: 0, max: 100 };
+    if (points < 300) return { level: 2, name: 'Steady', emoji: '🌿', min: 100, max: 300 };
+    if (points < 600) return { level: 3, name: 'Grounded', emoji: '🌳', min: 300, max: 600 };
+    if (points < 1000) return { level: 4, name: 'Resilient', emoji: '🌲', min: 600, max: 1000 };
+    return { level: 5, name: 'Unshakeable', emoji: '🌲✨', min: 1000, max: null };
+  },
+
+  getCurrentStreak: () => {
+    const logs = get().logs;
+    if (logs.length === 0) return 0;
+
+    // Sort logs by date (newest first)
+    const sortedLogs = [...logs].sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    // Check each day backwards
+    for (let i = 0; i < 365; i++) { // Max 365 days
+      const checkDate = new Date(currentDate);
+      checkDate.setDate(checkDate.getDate() - i);
+
+      const hasLogOnDate = sortedLogs.some(log => {
+        const logDate = new Date(log.timestamp);
+        logDate.setHours(0, 0, 0, 0);
+        return logDate.getTime() === checkDate.getTime();
+      });
+
+      if (hasLogOnDate) {
+        streak++;
+      } else if (i > 0) {
+        // If we miss a day (and it's not today), break
+        break;
+      }
+    }
+
+    return streak;
+  },
+
+  getLongestStreak: () => {
+    const logs = get().logs;
+    if (logs.length === 0) return 0;
+
+    // Group logs by date
+    const dateMap = new Map<string, boolean>();
+    logs.forEach(log => {
+      const date = new Date(log.timestamp);
+      date.setHours(0, 0, 0, 0);
+      const dateKey = date.toISOString().split('T')[0];
+      dateMap.set(dateKey, true);
+    });
+
+    const dates = Array.from(dateMap.keys()).sort();
+    let longestStreak = 0;
+    let currentStreak = 1;
+
+    for (let i = 1; i < dates.length; i++) {
+      const prevDate = new Date(dates[i - 1]);
+      const currDate = new Date(dates[i]);
+      const diffDays = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        currentStreak++;
+      } else {
+        longestStreak = Math.max(longestStreak, currentStreak);
+        currentStreak = 1;
+      }
+    }
+
+    return Math.max(longestStreak, currentStreak);
+  },
+
+  getResistanceRate: () => {
+    const logs = get().logs;
+    if (logs.length === 0) return 0;
+
+    const resistedCount = logs.filter(log => log.type === 'resisted').length;
+    return Math.round((resistedCount / logs.length) * 100);
   },
 }));

@@ -20,6 +20,7 @@ export interface UserData {
   logs: any[];
   plannedJoys: any[];
   customCravings?: any[];
+  customEmotions?: string[];
   lastSyncedAt?: number;
 }
 

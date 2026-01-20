@@ -21,7 +21,7 @@ const PRESET_CRAVINGS: { name: Category; icon: any; color: string }[] = [
   { name: 'Shopping', icon: ShoppingBag, color: '#be123c' },
 ];
 
-export function CravingSelector({ selectedCravings, onSelect, maxSelections = 3 }: CravingSelectorProps) {
+export function CravingSelector({ selectedCravings, onSelect, maxSelections = 10 }: CravingSelectorProps) {
   const [customInput, setCustomInput] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
 
@@ -74,12 +74,13 @@ export function CravingSelector({ selectedCravings, onSelect, maxSelections = 3 
   return (
     <View>
       <Text className="text-sm font-semibold text-slate-700 mb-3">
-        Pick {maxSelections} cravings you want to track ({selectedCravings.length}/{maxSelections})
+        Select 1-{maxSelections} cravings to track ({selectedCravings.length} selected)
       </Text>
 
       <ScrollView
         style={{ maxHeight: 500 }}
         showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps='handled'
       >
         <View className="flex-row flex-wrap gap-3">
           {allCravings.map((craving) => {

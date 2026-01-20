@@ -20,7 +20,14 @@
       "Bash(del apptest-data.tsx)",
       "Bash(adb devices:*)",
       "Bash(gradlew.bat app:assembleDebug:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(npx expo start:*)",
+      "Bash(timeout 10 tail:*)",
+      "Bash(netstat:*)",
+      "Bash(node -e:*)",
+      "Bash(npx react-native-async-storage)",
+      "Bash(adb shell:*)",
+      "Bash(npx expo-doctor)"
     ]
   }
 }

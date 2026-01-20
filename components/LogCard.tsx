@@ -54,21 +54,9 @@ const formatTime = (date: Date) => {
   }
 };
 
-const getEmotionEmoji = (emotion?: string) => {
-  switch (emotion) {
-    case 'Curious': return '🤔';
-    case 'Restless': return '😤';
-    case 'Stressed': return '😰';
-    case 'Bored': return '😑';
-    case 'Excited': return '✨';
-    default: return null;
-  }
-};
-
 export default function LogCard({ log }: { log: Log }) {
   const { Icon, color } = getCategoryIcon(log.category);
   const isResisted = log.type === 'resisted';
-  const emotionEmoji = getEmotionEmoji(log.emotion);
   const deleteLog = useStore((state) => state.deleteLog);
 
   const handleDelete = () => {
@@ -118,8 +106,8 @@ export default function LogCard({ log }: { log: Log }) {
               <Text className="text-slate-900 text-base font-semibold">
                 {log.category}
               </Text>
-              {emotionEmoji && (
-                <Text className="text-base">{emotionEmoji}</Text>
+              {log.emotion && (
+                <Text className="text-sm text-slate-600">{log.emotion}</Text>
               )}
             </View>
             <Text className="text-slate-500 text-sm mt-0.5">
