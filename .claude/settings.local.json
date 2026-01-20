@@ -27,7 +27,8 @@
       "Bash(node -e:*)",
       "Bash(npx react-native-async-storage)",
       "Bash(adb shell:*)",
-      "Bash(npx expo-doctor)"
+      "Bash(npx expo-doctor)",
+      "Bash(git checkout:*)"
     ]
   }
 }

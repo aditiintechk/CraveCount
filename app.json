@@ -1,51 +1,54 @@
 {
-  "expo": {
-    "name": "Crave Count",
-    "slug": "crave-count",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "description": "Track moments of awareness and build resistance to digital cravings. Earn badges, discover patterns, and gently build lasting habits.",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.cravecount.app"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#f8fafc"
-      },
-      "package": "com.cravecount.app",
-      "versionCode": 1,
-      "allowBackup": false,
-      "softwareKeyboardLayoutMode": "pan",
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE"
-      ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-asset",
-      "expo-font"
-    ],
-    "scheme": "cravecount",
-    "extra": {
-      "eas": {
-        "projectId": "d312fa7a-3fbc-48b3-917f-a35c6a9c2d12"
-      }
-    }
-  }
+	"expo": {
+		"name": "Crave Count",
+		"slug": "crave-count",
+		"version": "1.0.1",
+		"orientation": "portrait",
+		"icon": "./assets/icon.png",
+		"userInterfaceStyle": "light",
+		"description": "Track moments of awareness and build resistance to digital cravings. Earn badges, discover patterns, and gently build lasting habits.",
+		"splash": {
+			"image": "./assets/splash.png",
+			"resizeMode": "contain",
+			"backgroundColor": "#ffffff"
+		},
+		"assetBundlePatterns": ["**/*"],
+		"ios": {
+			"supportsTablet": true,
+			"bundleIdentifier": "com.cravecount.app"
+		},
+		"android": {
+			"adaptiveIcon": {
+				"foregroundImage": "./assets/adaptive-icon.png",
+				"backgroundColor": "#f8fafc"
+			},
+			"package": "com.cravecount.app",
+			"versionCode": 2,
+			"allowBackup": false,
+			"softwareKeyboardLayoutMode": "pan",
+			"permissions": ["INTERNET", "ACCESS_NETWORK_STATE"]
+		},
+		"web": {
+			"favicon": "./assets/favicon.png"
+		},
+		"plugins": [
+			"expo-router",
+			"expo-asset",
+			"expo-font",
+			[
+				"expo-notifications",
+				{
+					"icon": "./assets/icon.png",
+					"color": "#6366f1",
+					"sounds": []
+				}
+			]
+		],
+		"scheme": "cravecount",
+		"extra": {
+			"eas": {
+				"projectId": "d312fa7a-3fbc-48b3-917f-a35c6a9c2d12"
+			}
+		}
+	}
 }

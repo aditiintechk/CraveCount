@@ -70,6 +70,7 @@ export async function saveUserData(data: UserData): Promise<boolean> {
         notificationId: joy.notificationId || null,
       })),
       customCravings: data.customCravings || [],
+      customEmotions: data.customEmotions || [],
       lastSyncedAt: Date.now(),
     };
 

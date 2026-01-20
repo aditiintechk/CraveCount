@@ -73,32 +73,72 @@ export function onAuthChange(callback: (user: User | null) => void): () => void 
  */
 export async function initializeAuth(): Promise<User | null> {
   try {
-    console.log('🔐 Initializing auth...');
+    // Check if we have a persisted user ID from a previous session
+    const persistedUserId = await AsyncStorage.getItem(AUTH_USER_ID_KEY);
 
-    // Wait for Firebase to restore the persisted session
-    // The getReactNativePersistence we configured should handle this automatically
+    if (persistedUserId) {
+      console.log('📱 Found persisted user ID:', persistedUserId);
+
+      // Check if Firebase has this user already signed in
+      const existingUser = auth.currentUser;
+      if (existingUser && existingUser.uid === persistedUserId) {
+        console.log('✅ User already authenticated in Firebase');
+        currentUser = existingUser;
+        return existingUser;
+      }
+
+      // Firebase doesn't have the user, but we have a persisted ID
+      // This is expected in Expo Go - Firebase will handle re-auth automatically
+      console.log('⏳ Waiting for Firebase to restore session...');
+    }
+
+    // Wait for Firebase auth state to initialize
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
-        console.warn('⚠️ Auth restore timeout, creating new user');
-        signInAnonymous().then(resolve);
-      }, 3000); // Reduced to 3 seconds
+        console.warn('⚠️ Auth initialization timeout');
+        resolve(null);
+      }, 5000);
+
+      let hasResolved = false;
 
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (hasResolved) return;
+
         clearTimeout(timeout);
-        unsubscribe();
 
         if (user) {
-          // User session restored successfully
-          console.log('✅ Auth session restored:', user.uid);
-          currentUser = user;
+          // Verify this is our persisted user or save new user
+          const persistedId = await AsyncStorage.getItem(AUTH_USER_ID_KEY);
+
+          if (persistedId && user.uid !== persistedId) {
+            // Different user - this shouldn't happen, but clear old data
+            console.warn('⚠️ User ID mismatch, clearing old session');
+            await AsyncStorage.removeItem(AUTH_USER_ID_KEY);
+          }
+
+          // Save user ID
           await AsyncStorage.setItem(AUTH_USER_ID_KEY, user.uid);
+
+          console.log('✅ User authenticated:', user.uid);
+          currentUser = user;
+          hasResolved = true;
+          unsubscribe();
           resolve(user);
         } else {
-          // No persisted session, create new anonymous user
-          console.log('👤 No session found, creating new anonymous user');
+          // No user in Firebase - create new anonymous user
+          console.log('👤 No user found, signing in anonymously...');
           const newUser = await signInAnonymous();
+          hasResolved = true;
+          unsubscribe();
           resolve(newUser);
         }
+      }, (error) => {
+        if (hasResolved) return;
+        clearTimeout(timeout);
+        console.error('❌ Auth error:', error);
+        hasResolved = true;
+        unsubscribe();
+        resolve(null);
       });
     });
   } catch (error) {
