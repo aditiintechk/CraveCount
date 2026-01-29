@@ -11,20 +11,23 @@ import {
 	KeyboardAvoidingView,
 	Keyboard,
 } from 'react-native'
-import { X } from 'lucide-react-native'
+import { X, Calendar, Clock } from 'lucide-react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 
-import { useStore, Category, Emotion } from '../store/useStore'
+import { useStore, Category, Emotion, Log } from '../store/useStore'
 
 interface LogModalProps {
 	visible: boolean
 	onClose: () => void
 	onLogSuccess?: (points: number) => void
+	editLog?: Log | null
 }
 
 export default function LogModal({
 	visible,
 	onClose,
 	onLogSuccess,
+	editLog = null,
 }: LogModalProps) {
 	const customCravings = useStore((state) => state.customCravings)
 	const customEmotions = useStore((state) => state.customEmotions)
@@ -39,15 +42,35 @@ export default function LogModal({
 		'resisted',
 	)
 	const [keyboardHeight, setKeyboardHeight] = useState(0)
+	const [selectedDate, setSelectedDate] = useState(new Date())
+	const [showDatePicker, setShowDatePicker] = useState(false)
+	const [showTimePicker, setShowTimePicker] = useState(false)
 
 	const addLog = useStore((state) => state.addLog)
+	const updateLog = useStore((state) => state.updateLog)
 
-	// Set default category when modal opens or customCravings change
+	// Load edit data or reset form when modal opens
 	useEffect(() => {
-		if (visible && customCravings.length > 0 && !selectedCategory) {
-			setSelectedCategory(customCravings[0])
+		if (visible) {
+			if (editLog) {
+				// Edit mode: load existing log data
+				setSelectedCategory(editLog.category)
+				setSelectedEmotion(editLog.emotion)
+				setReflection(editLog.reflection || '')
+				setSelectedType(editLog.type)
+				setSelectedDate(new Date(editLog.timestamp))
+			} else {
+				// Add mode: reset to defaults
+				if (customCravings.length > 0 && !selectedCategory) {
+					setSelectedCategory(customCravings[0])
+				}
+				setSelectedEmotion(undefined)
+				setReflection('')
+				setSelectedType('resisted')
+				setSelectedDate(new Date())
+			}
 		}
-	}, [visible, customCravings, selectedCategory])
+	}, [visible, editLog, customCravings])
 
 	// Track keyboard height
 	useEffect(() => {
@@ -67,17 +90,31 @@ export default function LogModal({
 		}
 	}, [])
 
-	const handleSubmit = (type: 'observed' | 'resisted') => {
+	const handleSubmit = async (type?: 'observed' | 'resisted') => {
 		if (!selectedCategory) return
 
-		addLog(selectedCategory, type, selectedEmotion, reflection)
+		if (editLog) {
+			// Edit mode: update existing log with current selectedType
+			await updateLog(
+				editLog.id,
+				selectedCategory,
+				selectedType,
+				selectedEmotion,
+				reflection,
+				selectedDate
+			)
+		} else {
+			// Add mode: create new log with type parameter
+			const logType = type || 'resisted'
+			addLog(selectedCategory, logType, selectedEmotion, reflection, selectedDate)
 
-		// Calculate points earned
-		const points = type === 'resisted' ? 30 : 10
+			// Calculate points earned
+			const points = logType === 'resisted' ? 30 : 10
 
-		// Trigger animation
-		if (onLogSuccess) {
-			onLogSuccess(points)
+			// Trigger animation
+			if (onLogSuccess) {
+				onLogSuccess(points)
+			}
 		}
 
 		// Reset form
@@ -85,9 +122,47 @@ export default function LogModal({
 		setSelectedCategory(customCravings[0] || null)
 		setSelectedEmotion(undefined)
 		setSelectedType('resisted')
+		setSelectedDate(new Date())
 
 		// Close modal
 		onClose()
+	}
+
+	const formatDateTime = (date: Date) => {
+		const now = new Date()
+		const isToday = date.toDateString() === now.toDateString()
+
+		const time = date.toLocaleTimeString('en-US', {
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: true,
+		})
+
+		if (isToday) return `Today, ${time}`
+
+		const dateStr = date.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+		})
+		return `${dateStr}, ${time}`
+	}
+
+	const handleDateChange = (event: any, date?: Date) => {
+		if (Platform.OS === 'android') {
+			setShowDatePicker(false)
+		}
+		if (date) {
+			setSelectedDate(date)
+		}
+	}
+
+	const handleTimeChange = (event: any, date?: Date) => {
+		if (Platform.OS === 'android') {
+			setShowTimePicker(false)
+		}
+		if (date) {
+			setSelectedDate(date)
+		}
 	}
 
 	return (
@@ -125,7 +200,7 @@ export default function LogModal({
 						<View className='px-6 pt-6 pb-2'>
 							<View className='flex-row items-center justify-between mb-2'>
 								<Text className='text-2xl font-bold text-slate-900'>
-									Check In
+									{editLog ? 'Edit Log' : 'Check In'}
 								</Text>
 								<TouchableOpacity
 									onPress={onClose}
@@ -140,6 +215,67 @@ export default function LogModal({
 								</TouchableOpacity>
 							</View>
 						</View>
+
+						{/* Date/Time Selection */}
+						<View className='px-6 pb-4'>
+							<View className='bg-indigo-50 rounded-2xl p-4 border border-indigo-100'>
+								<View className='flex-row items-center justify-between'>
+									<View className='flex-1'>
+										<Text className='text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1'>
+											LOGGING FOR
+										</Text>
+										<Text className='text-base font-bold text-indigo-900'>
+											{formatDateTime(selectedDate)}
+										</Text>
+									</View>
+									<View className='flex-row gap-2'>
+										<TouchableOpacity
+											onPress={() => setShowDatePicker(true)}
+											className='w-10 h-10 bg-white rounded-xl items-center justify-center border border-indigo-200'
+											activeOpacity={0.7}
+										>
+											<Calendar
+												size={18}
+												color='#4f46e5'
+												strokeWidth={2}
+											/>
+										</TouchableOpacity>
+										<TouchableOpacity
+											onPress={() => setShowTimePicker(true)}
+											className='w-10 h-10 bg-white rounded-xl items-center justify-center border border-indigo-200'
+											activeOpacity={0.7}
+										>
+											<Clock
+												size={18}
+												color='#4f46e5'
+												strokeWidth={2}
+											/>
+										</TouchableOpacity>
+									</View>
+								</View>
+							</View>
+						</View>
+
+						{/* Date Picker */}
+						{showDatePicker && (
+							<DateTimePicker
+								value={selectedDate}
+								mode='date'
+								display={Platform.OS === 'ios' ? 'inline' : 'default'}
+								onChange={handleDateChange}
+								maximumDate={new Date()}
+							/>
+						)}
+
+						{/* Time Picker */}
+						{showTimePicker && (
+							<DateTimePicker
+								value={selectedDate}
+								mode='time'
+								display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+								onChange={handleTimeChange}
+							/>
+						)}
 
 						{/* Category Selection */}
 						<View className='px-6 pt-2'>
@@ -234,34 +370,58 @@ export default function LogModal({
 						</View>
 
 						{/* Action Buttons */}
-						<View className='px-6 pt-6 pb-20 flex-row gap-3'>
-							<TouchableOpacity
-								onPress={() => handleSubmit('observed')}
-								activeOpacity={0.8}
-								className='flex-1 bg-amber-50 rounded-xl p-4 border-2 border-amber-100'
-							>
-								<Text className='text-amber-700 font-bold text-center text-base mb-1'>
-									I Just Noticed It.
-								</Text>
-							</TouchableOpacity>
+						{editLog ? (
+							// Edit mode: Single Save button
+							<View className='px-6 pt-6 pb-20'>
+								<TouchableOpacity
+									onPress={() => handleSubmit()}
+									activeOpacity={0.8}
+									className='bg-slate-900 rounded-xl p-4 border-2 border-gray-600 ml-auto'
+									style={{
+										shadowColor: '#0f172a',
+										shadowOffset: { width: 0, height: 4 },
+										shadowOpacity: 0.3,
+										shadowRadius: 10,
+										elevation: 8,
+										minWidth: 120,
+									}}
+								>
+									<Text className='text-white font-bold text-center text-base'>
+										Save
+									</Text>
+								</TouchableOpacity>
+							</View>
+						) : (
+							// Add mode: Two buttons (Observed + Resisted)
+							<View className='px-6 pt-6 pb-20 flex-row gap-3'>
+								<TouchableOpacity
+									onPress={() => handleSubmit('observed')}
+									activeOpacity={0.8}
+									className='flex-1 bg-amber-50 rounded-xl p-4 border-2 border-amber-100'
+								>
+									<Text className='text-amber-700 font-bold text-center text-base mb-1'>
+										I Just Noticed It.
+									</Text>
+								</TouchableOpacity>
 
-							<TouchableOpacity
-								onPress={() => handleSubmit('resisted')}
-								activeOpacity={0.8}
-								className='flex-1 bg-slate-900 rounded-xl p-4 border-2 border-gray-600'
-								style={{
-									shadowColor: '#0f172a',
-									shadowOffset: { width: 0, height: 4 },
-									shadowOpacity: 0.3,
-									shadowRadius: 10,
-									elevation: 8,
-								}}
-							>
-								<Text className='text-white font-bold text-center text-base mb-1'>
-									I Resisted it!
-								</Text>
-							</TouchableOpacity>
-						</View>
+								<TouchableOpacity
+									onPress={() => handleSubmit('resisted')}
+									activeOpacity={0.8}
+									className='flex-1 bg-slate-900 rounded-xl p-4 border-2 border-gray-600'
+									style={{
+										shadowColor: '#0f172a',
+										shadowOffset: { width: 0, height: 4 },
+										shadowOpacity: 0.3,
+										shadowRadius: 10,
+										elevation: 8,
+									}}
+								>
+									<Text className='text-white font-bold text-center text-base mb-1'>
+										I Resisted it!
+									</Text>
+								</TouchableOpacity>
+							</View>
+						)}
 					</ScrollView>
 				</View>
 			</View>

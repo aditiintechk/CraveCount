@@ -1,7 +1,9 @@
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Animated } from 'react-native';
 import { Log, useStore } from '../store/useStore';
-import { Youtube, Instagram, Cookie, Smartphone, Globe, Trash2 } from 'lucide-react-native';
+import { Youtube, Instagram, Cookie, Smartphone, Globe, Trash2, Edit3 } from 'lucide-react-native';
 import { TikTokIcon } from './TikTokIcon';
+import { Swipeable } from 'react-native-gesture-handler';
+import { useRef } from 'react';
 
 const getCategoryIcon = (category: string) => {
   switch (category) {
@@ -37,8 +39,6 @@ const formatTime = (date: Date) => {
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
 
     const month = validDate.toLocaleDateString('en-US', { month: 'short' });
     const day = validDate.getDate();
@@ -54,12 +54,29 @@ const formatTime = (date: Date) => {
   }
 };
 
-export default function LogCard({ log }: { log: Log }) {
+interface LogCardProps {
+  log: Log;
+  onEdit?: (log: Log) => void;
+}
+
+export default function LogCard({ log, onEdit }: LogCardProps) {
   const { Icon, color } = getCategoryIcon(log.category);
   const isResisted = log.type === 'resisted';
   const deleteLog = useStore((state) => state.deleteLog);
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(log);
+      // Close the swipeable after opening edit modal
+      swipeableRef.current?.close();
+    }
+  };
 
   const handleDelete = () => {
+    // Close the swipeable first
+    swipeableRef.current?.close();
+
     Alert.alert(
       'Delete Entry',
       'Are you sure you want to delete this entry? Your points will be adjusted.',
@@ -77,21 +94,60 @@ export default function LogCard({ log }: { log: Log }) {
     );
   };
 
+  // Render right swipe actions (Edit and Delete buttons)
+  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const trans = dragX.interpolate({
+      inputRange: [-160, 0],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View className="flex-row items-center justify-end" style={{ width: 160 }}>
+        {onEdit && (
+          <TouchableOpacity
+            onPress={handleEdit}
+            className="bg-indigo-500 h-full justify-center items-center px-6 ml-1"
+            style={{
+              borderTopLeftRadius: 12,
+              borderBottomLeftRadius: 12,
+            }}
+            activeOpacity={0.7}
+          >
+            <Edit3 size={20} color="#ffffff" />
+            <Text className="text-white text-xs font-semibold mt-1">Edit</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          onPress={handleDelete}
+          className="bg-red-500 h-full justify-center items-center px-6 mr-2"
+          style={{
+            borderTopRightRadius: 12,
+            borderBottomRightRadius: 12,
+          }}
+          activeOpacity={0.7}
+        >
+          <Trash2 size={20} color="#ffffff" />
+          <Text className="text-white text-xs font-semibold mt-1">Delete</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
-    <View
-      className={`rounded-3xl p-5 border ${
-        isResisted
-          ? 'bg-emerald-50 border-emerald-100'
-          : 'bg-white border-slate-100'
-      }`}
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2,
-      }}
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+      friction={2}
     >
+      <View
+        className={`rounded-xl p-5 border ${
+          isResisted
+            ? 'bg-emerald-50 border-emerald-100'
+            : 'bg-white border-slate-100'
+        }`}
+      >
       <View className="flex-row items-start justify-between">
         <View className="flex-row items-center flex-1">
           <View
@@ -131,17 +187,10 @@ export default function LogCard({ log }: { log: Log }) {
         </View>
       </View>
 
-      <View className="ml-16 mt-1 flex-row items-center justify-between">
+      <View className="ml-16 mt-1">
         <Text className={`text-xs font-semibold ${isResisted ? 'text-emerald-600' : 'text-amber-600'}`}>
           +{log.points} pts
         </Text>
-        <TouchableOpacity
-          onPress={handleDelete}
-          className="p-2 rounded-full bg-slate-100"
-          activeOpacity={0.7}
-        >
-          <Trash2 size={14} color="#64748b" />
-        </TouchableOpacity>
       </View>
 
       {log.reflection && (
@@ -151,6 +200,7 @@ export default function LogCard({ log }: { log: Log }) {
           </Text>
         </View>
       )}
-    </View>
+      </View>
+    </Swipeable>
   );
 }

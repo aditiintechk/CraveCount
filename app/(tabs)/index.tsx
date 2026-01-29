@@ -9,15 +9,14 @@ import { StatusBar } from 'expo-status-bar'
 import { useStore } from '../../store/useStore'
 import { Target, History, TrendingUp, Sparkles } from 'lucide-react-native'
 import StreakCard from '../../components/StreakCard'
+import DualCircularProgress from '../../components/DualCircularProgress'
 import { useRouter } from 'expo-router'
 
 export default function Dashboard() {
-	const { getAwarenessCount, getResistedCount } = useStore()
+	const { getPast7DaysStats } = useStore()
 	const router = useRouter()
 
-	const awarenessCount = getAwarenessCount()
-	const resistedCount = getResistedCount()
-	const totalCount = awarenessCount + resistedCount
+	const past7Days = getPast7DaysStats()
 
 	return (
 		<View className='flex-1 bg-slate-50'>
@@ -30,24 +29,30 @@ export default function Dashboard() {
 			>
 				{/* Header */}
 				<View className='px-6 pt-16 pb-6'>
-					<View className='flex-row items-center justify-between'>
-						<View>
-							<Text className='text-4xl font-bold text-slate-900 tracking-tight'>
-								Crave Count
-							</Text>
-							<Text className='text-base text-slate-500 mt-1'>
-								Gently build resistance.
-							</Text>
-						</View>
-						<View className='flex-row items-center gap-2'>
-							<View className='bg-indigo-50 rounded-full p-2.5'>
-								<Target size={20} color='#6366f1' />
-							</View>
-							<Text className='text-slate-900 text-lg font-bold'>
-								{totalCount}
-							</Text>
-						</View>
-					</View>
+					<Text className='text-4xl font-bold text-slate-900 tracking-tight'>
+						Crave Count
+					</Text>
+					<Text className='text-base text-slate-500 mt-1'>
+						Gently build resistance.
+					</Text>
+				</View>
+
+				{/* Dual Circular Progress Ring */}
+				<View className='items-center py-8'>
+					<DualCircularProgress
+						size={220}
+						outerStrokeWidth={16}
+						innerStrokeWidth={14}
+						outerProgress={past7Days.resistedPercent}
+						innerProgress={past7Days.observedPercent}
+						outerColor='#6366f1'
+						innerColor='#f59e0b'
+						backgroundColor='#e2e8f0'
+						label='PAST 7 DAYS'
+						outerValue={past7Days.resisted}
+						innerValue={past7Days.observed}
+						subtitle={`${past7Days.total} total`}
+					/>
 				</View>
 
 				{/* Streak Card */}

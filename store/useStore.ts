@@ -46,7 +46,8 @@ interface StoreState {
   customEmotions: string[]; // Array of custom emotions with emojis like ['Happy 😊', 'Stressed 😰']
   isSyncing: boolean;
   lastSyncedAt: number | null;
-  addLog: (category: Category, type: LogType, emotion?: Emotion, reflection?: string) => void;
+  addLog: (category: Category, type: LogType, emotion?: Emotion, reflection?: string, timestamp?: Date) => void;
+  updateLog: (id: string, category: Category, type: LogType, emotion?: Emotion, reflection?: string, timestamp?: Date) => Promise<void>;
   deleteLog: (id: string) => Promise<void>;
   addPlannedJoy: (title: string, description: string | undefined, date: Date) => Promise<void>;
   deletePlannedJoy: (id: string) => Promise<void>;
@@ -76,7 +77,7 @@ export const useStore = create<StoreState>((set, get) => ({
   isSyncing: false,
   lastSyncedAt: null,
 
-  addLog: async (category: Category, type: LogType, emotion?: Emotion, reflection?: string) => {
+  addLog: async (category: Category, type: LogType, emotion?: Emotion, reflection?: string, timestamp?: Date) => {
     const points = type === 'observed' ? 10 : 30;
     const newLog: Log = {
       id: Date.now().toString(),
@@ -84,13 +85,49 @@ export const useStore = create<StoreState>((set, get) => ({
       type,
       emotion,
       reflection,
-      timestamp: new Date(),
+      timestamp: timestamp || new Date(),
       points,
     };
 
     set((state) => ({
       willpowerPoints: state.willpowerPoints + points,
       logs: [newLog, ...state.logs],
+    }));
+
+    // Persist to AsyncStorage and sync to cloud
+    const currentState = get();
+    const dataToSave = {
+      willpowerPoints: currentState.willpowerPoints,
+      logs: currentState.logs,
+      plannedJoys: currentState.plannedJoys,
+      customCravings: currentState.customCravings,
+      customEmotions: currentState.customEmotions,
+    };
+
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    await get().syncToCloud();
+  },
+
+  updateLog: async (id: string, category: Category, type: LogType, emotion?: Emotion, reflection?: string, timestamp?: Date) => {
+    const logToUpdate = get().logs.find(log => log.id === id);
+    if (!logToUpdate) return;
+
+    const newPoints = type === 'observed' ? 10 : 30;
+    const pointsDifference = newPoints - logToUpdate.points;
+
+    const updatedLog: Log = {
+      ...logToUpdate,
+      category,
+      type,
+      emotion,
+      reflection,
+      timestamp: timestamp || logToUpdate.timestamp,
+      points: newPoints,
+    };
+
+    set((state) => ({
+      willpowerPoints: state.willpowerPoints + pointsDifference,
+      logs: state.logs.map(log => log.id === id ? updatedLog : log),
     }));
 
     // Persist to AsyncStorage and sync to cloud
@@ -444,5 +481,78 @@ export const useStore = create<StoreState>((set, get) => ({
 
     const resistedCount = logs.filter(log => log.type === 'resisted').length;
     return Math.round((resistedCount / logs.length) * 100);
+  },
+
+  // Get logs for specific date ranges
+  getLogsInDateRange: (startDate: Date, endDate: Date) => {
+    const logs = get().logs;
+    return logs.filter(log => {
+      const logDate = new Date(log.timestamp);
+      return logDate >= startDate && logDate <= endDate;
+    });
+  },
+
+  getLogsForLastDays: (days: number) => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+    return get().getLogsInDateRange(startDate, endDate);
+  },
+
+  // Get chart data grouped by date for the last N days
+  getChartDataForPeriod: (days: number) => {
+    const logs = get().getLogsForLastDays(days);
+    const dateMap = new Map<string, { observed: number; resisted: number; total: number }>();
+
+    // Initialize all dates with 0 counts
+    const endDate = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(endDate.getDate() - i);
+      const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      dateMap.set(dateKey, { observed: 0, resisted: 0, total: 0 });
+    }
+
+    // Count logs for each date
+    logs.forEach(log => {
+      const logDate = new Date(log.timestamp);
+      const dateKey = logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      const existing = dateMap.get(dateKey);
+      if (existing) {
+        if (log.type === 'observed') {
+          existing.observed++;
+        } else {
+          existing.resisted++;
+        }
+        existing.total++;
+      }
+    });
+
+    // Convert to array format for charts
+    return Array.from(dateMap.entries()).map(([date, counts]) => ({
+      date,
+      observed: counts.observed,
+      resisted: counts.resisted,
+      total: counts.total,
+    }));
+  },
+
+  // Get stats for past 7 days
+  getPast7DaysStats: () => {
+    const logs = get().getLogsForLastDays(7);
+    const observed = logs.filter(log => log.type === 'observed').length;
+    const resisted = logs.filter(log => log.type === 'resisted').length;
+    const total = logs.length;
+
+    return {
+      observed,
+      resisted,
+      total,
+      observedPercent: total > 0 ? Math.round((observed / total) * 100) : 0,
+      resistedPercent: total > 0 ? Math.round((resisted / total) * 100) : 0,
+    };
   },
 }));

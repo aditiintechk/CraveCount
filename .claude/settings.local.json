@@ -28,7 +28,12 @@
       "Bash(npx react-native-async-storage)",
       "Bash(adb shell:*)",
       "Bash(npx expo-doctor)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(adb uninstall:*)",
+      "Bash(gradlew.bat app:installDebug:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(pkill:*)"
     ]
   }
 }
